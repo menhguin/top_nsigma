@@ -23,12 +23,6 @@ By inverting conventional outlier detection logic, we treat the **99% tokens as 
 
 > 💡 **Author's note**: Perhaps the most intriguing finding is what I call the "noise of silence" - a fundamental flaw of softmax. To prevent gradient vanishing, the logits cannot be pushed too far apart. For autoregressive models, this limitation appears to be fatal. As long as softmax activation is used, this noise will persist and can only be mitigated through inference-time methods. Yet another evidence that softmax is problematic!
 
-> [!NOTE] 
-> Due to vLLM's current architecture, we have to use this temporary hack. We're working on merging this properly with the official vLLM codebase.
-
-> [!WARNING] 
-> Multi-GPU (tensor-parallelism) support is currently experimental. Testing has primarily been done on single-GPU setups.
-
 
 ### Usage
 
@@ -45,9 +39,11 @@ model = vllm.LLM(model=path)
 hack_vllm(model, FacadeSampler(nsigma, device))
 ```
 
-We are trying to merge this with the official vLLM codebase. Due to vLLM's lack of pre-designed support for multiple sampling methods, we currently have to use this ugly hack.
+> [!NOTE] 
+> Due to vLLM's current architecture, we have to use this temporary hack. We're working on merging this properly with the official vLLM codebase.
 
-> It may encounter bugs when used with multi-gpus(tensor-parallelism). We only tested it with single-gpu.
+> [!WARNING] 
+> Multi-GPU (tensor-parallelism) support is currently experimental. Testing has primarily been done on single-GPU setups.
 
 ## Current Status
 
