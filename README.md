@@ -1,14 +1,19 @@
 # Top-NSigma Sampling
 
-This is the official repository for the [Top-$n\sigma$ sampling](https://arxiv.org/pdf/2411.07641) algorithm. The repository aims to provide a working implementation of the algorithm and collect empirical data with help from the community. We encourage you to try it out and share your feedback!
+This is the official repository for the [Top-nσ sampling](https://arxiv.org/pdf/2411.07641) algorithm. The repository aims to provide a working implementation of the algorithm and collect empirical data with help from the community. We encourage you to try it out and share your feedback!
 
 ---
 
 ## Overview
 
-Top-$n\sigma$ is a novel sampling method for language models that truncates the probability distribution based on standard deviations from the maximum logit value. It exhibits superior performance in terms of quality and diversity compared to existing sampling methods.
+Top-nσ is a novel sampling method for language models that truncates the probability distribution based on standard deviations from the maximum logit value. It exhibits superior performance in terms of quality and diversity compared to existing sampling methods.
 
 ![Single-Pass results](img/results.png)
+
+> [!TIP]
+> One of the major advantages of Top-nσ is its extremely simple implementation - requiring as little as two lines of PyTorch code.
+>
+> Based on our experience, only min-p has comparable speed, while other methods show noticeable throughput loss(with inferior quality).
 
 ### Findings
 
