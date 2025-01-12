@@ -1,0 +1,167 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{setspace}
+
+\begin{document}
+
+\title{Min-Z Sampling with Median}
+\author{}
+\date{}
+\maketitle
+
+\section*{Abstract}
+Min-Z Sampling introduces a novel approach to token truncation by leveraging a median-centered Z-score threshold. Building on the principles of Top-\( n\sigma \), Min-Z Sampling replaces the mean-based Z-score calculation with a robust median to handle asymmetric or heavy-tailed logit distributions. This method ensures effective filtering of low-likelihood tokens while dynamically adapting to peaked or flat distributions, maintaining both efficiency and stability.
+
+\section*{Algorithm Description}
+\begin{algorithm}[h!]
+\caption{Min-Z Sampling with Median}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Input context $x$, temperature $T$, scaling factor $\beta$
+\STATE \textbf{Output:} Next token
+\STATE Compute logits $l = \text{LLM}(x)$
+\STATE Scale logits: $l' = l / T$
+\STATE Calculate $M = \max(l')$, $\text{med}(l')$, and $\sigma = \text{std}(l')$
+\STATE Compute $n_{\text{max}} = \frac{M - \text{med}(l')}{\sigma}$ and $n_{\text{thresh}} = \beta \cdot n_{\text{max}}$
+\STATE Create mask: 
+\[
+m_i = 
+\begin{cases} 
+1 & \text{if } \frac{l_i' - \text{med}(l')}{\sigma} \geq n_{\text{thresh}} \\
+0 & \text{otherwise}
+\end{cases}
+\]
+\STATE Apply mask:
+\[
+l_i' = 
+\begin{cases} 
+l_i' & \text{if } m_i = 1 \\
+-\infty & \text{otherwise}
+\end{cases}
+\]
+\STATE $p = \text{softmax}(l')$
+\STATE Sample token from distribution $p$
+\end{algorithmic}
+\end{algorithm}
+
+\section*{Explanation}
+
+Min-Z Sampling builds on the principles of Top-\( n\sigma \), but introduces a median-based approach to account for skewed or heavy-tailed distributions in logit space. This section provides an in-depth explanation of the key steps and mathematical formulations behind the algorithm.
+
+\subsection*{Step 1: Logit Normalization}
+The logits \( l_i \) for each token are first scaled by the temperature parameter \( T \):
+\[
+l'_i = \frac{l_i}{T}
+\]
+This ensures that the logits are adjusted to the desired level of randomness in the output distribution.
+
+\subsection*{Step 2: Z-Score Calculation with Median}
+Instead of using the mean, the median of the logits (\( \text{med}(l') \)) is computed. The Z-score for each token is then defined as:
+\[
+z_i = \frac{l_i' - \text{med}(l')}{\sigma}
+\]
+where \( \sigma \) is the standard deviation of the logits. This approach is more robust to outliers, which can skew the mean, particularly in flat or heavy-tailed distributions.
+
+The Z-score of the maximum logit is given by:
+\[
+n_{\text{max}} = \frac{M - \text{med}(l')}{\sigma}, \quad \text{where } M = \max(l').
+\]
+
+\subsection*{Step 3: Adaptive Threshold Definition}
+The threshold Z-score (\( n_{\text{thresh}} \)) is determined as a fraction of \( n_{\text{max}} \):
+\[
+n_{\text{thresh}} = \beta \cdot n_{\text{max}}
+\]
+Here, \( \beta \) acts as a scaling factor that dynamically adjusts the truncation threshold based on the peakedness of the logit distribution.
+
+\subsection*{Step 4: Token Filtering via Masking}
+Tokens with Z-scores below \( n_{\text{thresh}} \) are filtered out by applying a mask:
+\[
+m_i = 
+\begin{cases} 
+1 & \text{if } z_i \geq n_{\text{thresh}} \\
+0 & \text{otherwise}
+\end{cases}
+\]
+For masked tokens, their logits are set to negative infinity:
+\[
+l_i' = 
+\begin{cases} 
+l_i' & \text{if } m_i = 1 \\
+-\infty & \text{otherwise}
+\end{cases}
+\]
+
+\subsection*{Step 5: Softmax and Sampling}
+The remaining logits are passed through the softmax function to produce the final probability distribution:
+\[
+p_i = \frac{\exp(l_i')}{\sum_j \exp(l_j')}
+\]
+A token is then sampled from this distribution.
+
+\section*{Advantages of Min-Z Sampling}
+1. \textbf{Robustness to Outliers:} By centering the Z-score calculation on the median, the algorithm effectively handles skewed or heavy-tailed logit distributions.
+
+2. \textbf{Dynamic Adaptation} The scaling factor \( \beta \) allows the threshold to adjust based on the distribution's shape, ensuring minimal truncation in flat distributions and aggressive filtering in peaked ones.
+
+3. \textbf{Computational Efficiency} The algorithm requires only basic statistical computations (median, standard deviation) and avoids complex operations like sorting or iterative truncation.
+
+\section*{Conclusion}
+Min-Z Sampling provides a robust and adaptive mechanism for token truncation in text generation. By combining the principles of Z-score-based filtering with median-centered calculations, it offers significant improvements in handling diverse logit distributions compared to traditional methods like Top-\( n\sigma \).
+
+
+
+Context on min z sampling:
+
+Dear Professors,
+
+
+I hope you are doing well. I am Minh Nguyen, lead author of the Min P truncation sampling paper and undergraduate at Singapore Management University. I am writing to suggest a follow-up collaboration / alternative implementation of your recent work Top-nσ: Not All Logits Are You Need, utilising Z Score as a logit truncation threshold.
+
+
+Background/ Alternatives Explored:
+
+First, I must commend your paper: I had been trying many different alternatives to Min P this year, and struggled to find something clearly better than p(max) * p(base). The main direction I went with was to 1. look at entropy for the entire distribution and 2. look at entropy variance across tokens and attention heads which resulted in Entropix.
+
+
+What I had not noticed was that variance also works for logits! Your paper was very exciting in this regard, especially with the presentation of both theory and downstream task benchmarks.
+
+
+Alternative Implementation: Min Z
+
+That said, I would like to propose an alternative implementation which I have attached, but can be expressed informally as:
+
+
+Z score (threshold) = z score (max) * base %
+
+
+You may also understand it as:
+
+n (threshold) = n (max) × base %, where n (max) = (l (max) - median) / σ)
+
+
+What is different here?
+1. Range-centred (max-median) vs top-centered (max) - Instead of centering the threshold on the max logit and extending the threshold down n * sigma, you are using a range between the median and the max. This results in more dynamic ranges compared to using a static n sigma. You can think of it as a dynamic n sigma determined by a fraction of max minus median.
+
+2. Z score - Z score is basically the extent of standard deviation. I think it’s a nice linear representation of how far outside the median a token is.
+3. Median vs mean Median is used instead of mean to account for outlier effects of heavy-tail distributions.
+
+
+These changes essentially combine Top-nσ’s temperature invariance and logit with min-p’s dynamic/variable ranges.
+
+
+Follow-up
+
+Since I am still developing the core algorithm, I have not tested this new method yet. I am also exploring other follow-up methods such as subtracting linear values from logits, soft logit thresholds, implementing per-token thresholds from adaptive decoding and training Sparse Autoencoders for mechanistic interpretability,
+
+
+I would greatly appreciate your feedback and any suggestions on this alternative approach. Additionally, if you are open to it, I would be delighted to explore a potential collaboration to benchmark and evaluate this method alongside your Top-nσ implementation.
+
+
+Best Regards,
+
+Nguyen Nhat Minh
+
+\end{document}
