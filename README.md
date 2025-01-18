@@ -1,3 +1,6 @@
+> [!NOTE]
+> Our latest evaluation code is maintained in `/dev` branch. Please check it out for the latest updates. This README is outdated.
+
 # Top-NSigma Sampling
 
 This is the official repository for the [Top-nσ sampling](https://arxiv.org/pdf/2411.07641) algorithm. The repository aims to provide a working implementation of the algorithm and collect empirical data with help from the community. We encourage you to try it out and share your feedback!
